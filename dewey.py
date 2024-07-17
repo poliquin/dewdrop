@@ -44,10 +44,17 @@ class DeweyData:
     def get_files(self, product: str, **kwargs) -> Generator[dict, None, None]:
         """Download metadata for product."""
 
-        params: dict = {
-            "partition_key_after": "1900-01-01",
-            "partition_key_before": "2099-12-31"
-        } | kwargs
+        # use metadata to determine default partitioning
+        meta = self.get_meta(product)
+
+        if meta["partition_type"] == "DATE":
+            params: dict = {
+                "partition_key_after": "1900-01-01", "partition_key_before": "2099-12-31"
+            }
+        else:
+            params = {}
+
+        params |= kwargs
 
         i = 1
         while True:
