@@ -17,23 +17,83 @@ from pprint import pprint
 from typing import Generator
 
 
-class DeweyData:
+class ExtendedSession(requests.Session):
+    """A requests session that retries and delays requests as needed."""
 
-    def __init__(self, key: str|None = None, sleep: float = 0.6):
+    def __init__(self, max_tries: int = 5, delay: float = 1.0, headers: dict|None = None):
+        super().__init__()
+        self.headers.update(headers or {})
 
+        self.max_tries: int = int(max_tries)
+        self.retry_delay: float = 120
+        self.request_delay: float = float(delay)
+        self._last_request_time: float = 0
+
+    def _delay(self) -> None:
+        """Delay between requests."""
+        time_since_last_request = time.time() - self._last_request_time
+        if time_since_last_request < self.request_delay:
+            time.sleep(self.request_delay - time_since_last_request)
+        self._last_request_time = time.time()
+
+    def request(self, method: str|bytes, url: str|bytes, **kwargs) -> requests.Response:  # pyright: ignore
+        """Make a request with retries and delays as necessary."""
+
+        if self.request_delay > 0:
+            self._delay()
+
+        tries = 0
+        while tries < self.max_tries:
+            tries += 1
+
+            try:
+                resp = super().request(method, url, **kwargs)
+
+                # don't bother retrying if not found or access denied
+                if resp.status_code in (403, 404):
+                    logging.critical("Request to %s failed with status %d", url, resp.status_code)
+                    break
+
+                resp.raise_for_status()
+                return resp
+
+            except requests.RequestException as e:
+                logging.error("Request failed: %s", e)
+                if tries < self.max_tries:
+                    time.sleep(self.retry_delay * (2 ** (tries - 1)))
+                    logging.debug("Retrying request to %s", url)
+
+        raise requests.RequestException(
+            f"Request to {url} failed after {tries} {'try' if tries == 1 else 'tries'}"
+        )
+
+
+class DeweyData(ExtendedSession):
+    """Interact with Dewey Data API."""
+
+    def __init__(self, key: str|None = None, sleep: float = 1.0):
+
+        super().__init__(delay = float(sleep))
         self._base_url = "https://app.deweydata.io/external-api/v3/products"
-        self._key = os.getenv("DEWEY_API_KEY") if key is None else key
-        self.sleep = float(sleep)
+        self.key = os.getenv("DEWEY_API_KEY") if key is None else key
+
+    @property
+    def key(self) -> str|None:
+        return self._key
+
+    @key.setter
+    def key(self, key: str|None) -> None:
+        self._key = key
+        self._set_api_header()
+
+    def _set_api_header(self) -> None:
+        """Set the API key header."""
+        headers = {"X-API-KEY": self._key, "accept": "application/json"}
+        self.headers.update(headers)
 
     def _get(self, url: str, params: dict|None = None) -> dict:
         """Make an API request."""
-
-        headers = {"X-API-KEY": self._key, "accept": "application/json"}
-        req = requests.get(url, params=params, headers=headers)
-        req.raise_for_status()
-        time.sleep(self.sleep)
-
-        return req.json()
+        return self.request("GET", url, params=params).json()
 
     def get_meta(self, product: str, **kwargs) -> dict:
         """Download metadata for product."""
@@ -99,8 +159,7 @@ class DeweyData:
                 continue
 
             logging.debug("Downloading %s", file["file_name"])
-            req = requests.get(file["link"])
-            req.raise_for_status()
+            req = self.request("GET", file["link"])
 
             with open(fpath, "wb") as f:
                 f.write(req.content)
@@ -134,7 +193,7 @@ if __name__ == "__main__":
     argp.add_argument("-v", "--verbose", action="store_true", help="Enable log.")
     argp.add_argument("--params", type=json.loads, help="Additional parameters.")
     argp.add_argument("--debug", action="store_true", help="Enable debug mode.")
-    argp.add_argument("--sleep", type=float, default=0.6, help="Delay between requests")
+    argp.add_argument("--sleep", type=float, default=1.0, help="Delay between requests")
 
     subp = argp.add_subparsers(dest="cmd", required=True)
 
@@ -154,7 +213,7 @@ if __name__ == "__main__":
 
 
     opts = argp.parse_args()
-    dew.sleep = opts.sleep
+    dew.request_delay = opts.sleep
     if opts.key:
         dew._key = opts.key
     if opts.verbose:
