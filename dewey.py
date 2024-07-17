@@ -148,7 +148,7 @@ class DeweyData(ExtendedSession):
         dp.mkdir(parents=True, exist_ok=True)
 
         for file in self.get_files(product, **kwargs):
-            if partition:
+            if partition and file['partition_key'] is not None:
                 fpath = dp / file["partition_key"] / file["file_name"]
                 fpath.parent.mkdir(parents=True, exist_ok=True)
             else:
