@@ -3,7 +3,26 @@ Interact with Dewey Data API
 
 A simple Python 3 client for the Dewey Data API.
 
-    python dewey.py --help
+    > python dewey.py --help
+
+    usage: dewey.py [-h] [-k KEY] [-v] [--params PARAMS] [--debug]
+                    product {meta,download,list} ...
+    
+    Fetch data from Dewey Data.
+    
+    positional arguments:
+      product               Product to fetch data for.
+      {meta,download,list}
+        meta                Fetch metadata for product.
+        download            Download files for product.
+        list                List files for product.
+    
+    options:
+      -h, --help            show this help message and exit
+      -k KEY, --key KEY     API key.
+      -v, --verbose         Enable log.
+      --params PARAMS       Additional parameters.
+      --debug               Enable debug mode.
 
 ## Commands
 
