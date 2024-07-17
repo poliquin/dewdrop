@@ -10,6 +10,7 @@ import logging
 import os
 import requests
 import sys
+import time
 
 from pathlib import Path
 from pprint import pprint
@@ -18,10 +19,11 @@ from typing import Generator
 
 class DeweyData:
 
-    def __init__(self, key: str|None = None):
+    def __init__(self, key: str|None = None, sleep: float = 0.6):
 
         self._base_url = "https://app.deweydata.io/external-api/v3/products"
         self._key = os.getenv("DEWEY_API_KEY") if key is None else key
+        self.sleep = float(sleep)
 
     def _get(self, url: str, params: dict|None = None) -> dict:
         """Make an API request."""
@@ -29,6 +31,7 @@ class DeweyData:
         headers = {"X-API-KEY": self._key, "accept": "application/json"}
         req = requests.get(url, params=params, headers=headers)
         req.raise_for_status()
+        time.sleep(self.sleep)
 
         return req.json()
 
@@ -113,6 +116,7 @@ if __name__ == "__main__":
     argp.add_argument("-v", "--verbose", action="store_true", help="Enable log.")
     argp.add_argument("--params", type=json.loads, help="Additional parameters.")
     argp.add_argument("--debug", action="store_true", help="Enable debug mode.")
+    argp.add_argument("--sleep", type=float, default=0.6, help="Delay between requests")
 
     subp = argp.add_subparsers(dest="cmd", required=True)
 
@@ -132,6 +136,7 @@ if __name__ == "__main__":
 
 
     opts = argp.parse_args()
+    dew.sleep = opts.sleep
     if opts.key:
         dew._key = opts.key
     if opts.verbose:
