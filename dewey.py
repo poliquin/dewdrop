@@ -63,6 +63,17 @@ class DeweyData:
             logging.debug(
                 "Fetched page %d of %d for %s file list", i, response["total_pages"], product
             )
+            logging.debug(
+                f"""
+                ===== {product} =====
+                 Total Files: {response["total_files"]}
+                 Total Pages: {response["total_pages"]}
+                  Total Size: {response["total_size"]}
+                  Expires At: {response["expires_at"]}
+                  Page Files: {response["number_of_files_for_page"]}
+                """
+            )
+
             yield from response["download_links"]
             if i >= response["total_pages"]:
                 break
