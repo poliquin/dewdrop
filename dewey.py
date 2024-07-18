@@ -134,7 +134,9 @@ class DeweyData(ExtendedSession):
                 """
             )
 
-            yield from response["download_links"]
+            links = response.pop("download_links")
+            yield from (d | response for d in links)
+
             if i >= response["total_pages"]:
                 break
             i += 1
@@ -148,11 +150,16 @@ class DeweyData(ExtendedSession):
         dp.mkdir(parents=True, exist_ok=True)
 
         for file in self.get_files(product, **kwargs):
+
             if partition and file['partition_key'] is not None:
                 fpath = dp / file["partition_key"] / file["file_name"]
-                fpath.parent.mkdir(parents=True, exist_ok=True)
             else:
-                fpath = dp / file["file_name"]
+                # file names can repeat across pages of the same product,
+                # include page number in the path for multi-page products
+                if file["total_pages"] == 1:
+                    fpath = dp / file["file_name"]
+                else:
+                    fpath = dp / f"page-{file['page']}" / file["file_name"]
 
             if not clobber and fpath.exists():
                 logging.debug("Skipping existing file %s", fpath)
@@ -161,6 +168,7 @@ class DeweyData(ExtendedSession):
             logging.debug("Downloading %s", file["file_name"])
             req = self.request("GET", file["link"])
 
+            fpath.parent.mkdir(parents=True, exist_ok=True)
             with open(fpath, "wb") as f:
                 f.write(req.content)
 
