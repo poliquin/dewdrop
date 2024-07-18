@@ -25,7 +25,7 @@ class ExtendedSession(requests.Session):
         self.headers.update(headers or {})
 
         self.max_tries: int = int(max_tries)
-        self.retry_delay: float = 120
+        self.retry_delay: float = 180
         self.request_delay: float = float(delay)
         self._last_request_time: float = 0
 
