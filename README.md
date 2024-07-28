@@ -1,23 +1,20 @@
 Dew Drop: A command line tool for interacting with Dewey Data API
 =================================================================
 
-A simple Python 3 client for the Dewey Data API.
+A simple Python 3 client for the Dewey Data API that can be used to fetch
+product information and download files.
 
-    > python -m dewdrop --help
+    usage: dewdrop [-h] [-k KEY] [-v] [--params PARAMS] [--debug] [--sleep SLEEP]
+                   {meta,download,list} ...
 
-    usage: __main__.py [-h] [-k KEY] [-v] [--params PARAMS] [--debug]
-                       [--sleep SLEEP]
-                       product {meta,download,list} ...
-    
     Fetch data from Dewey Data.
-    
+
     positional arguments:
-      product               Product to fetch data for.
       {meta,download,list}
         meta                Fetch metadata for product.
         download            Download files for product.
         list                List files for product.
-    
+
     options:
       -h, --help            show this help message and exit
       -k KEY, --key KEY     API key.
@@ -34,26 +31,33 @@ A simple Python 3 client for the Dewey Data API.
 Get metadata for a product. For example, if the product identifier is
 something like `978cz-306w`, then the command would be:
 
-    python -m dewdrop 978cz-306w meta
+    dewdrop meta 978cz-306w
 
 By default, the API key is read from the `DEWEY_API_KEY` environment variable.
 To set it manually, use the `key` option:
 
-    python -m dewdrop 978cz-306w -k YOUR_API_KEY meta
+    dewdrop -k YOUR_API_KEY meta 978cz-306w
+
+See `dewdrop meta --help` for full options.
 
 ### `list`
 
 List all file info for a product.
 
-    python -m dewdrop 978cz-306w list
+    dewdrop list 978cz-306w
 
-The file information will be written to standard output.
+The file information will be written to standard output. You can, of course,
+redirect this to a file if you want to save it:
+
+    dewdrop list 978cz-306w > file_info.tsv
+
+See `dewdrop list --help` for full options.
 
 ### `download`
 
 Download all files for a product.
 
-    python -m dewdrop 978cz-306w download destination-folder-path
+    dewdrop download 978cz-306w destination-folder-path
 
 Files will be placed in `destination-folder-path`, which will be created if
 it does not exist. Additionally, the file information will be written to
@@ -61,7 +65,7 @@ standard output as with the `list` command.
 
 By default, the downloaded files will be organized by the `partition_key`
 value that the API returns which each file. To ignore this, specify the
-option `--no-partition`.
+option `--no-partition`. See `dewdrop download --help` for full options.
 
 #### Request parameters
 
@@ -71,7 +75,7 @@ JSON object, which can be difficult to enter as a string on the command line.
 One option is to put the parameters in a JSON file and pass the file contents
 to the argument like this:
 
-    python -m dewdrop --params "$(<params.json)" 978cz-306w download destination-folder-path
+    dewdrop --params "$(<params.json)" download 978cz-306w destination-folder-path
 
 Where a `params.json` file to download data for 2022 might look like this:
 

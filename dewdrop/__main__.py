@@ -30,26 +30,27 @@ def main():
     dew = DeweyData()
 
     argp = argparse.ArgumentParser(description="Fetch data from Dewey Data.")
-    argp.add_argument("product", type=str, help="Product to fetch data for.")
+    subp = argp.add_subparsers(dest="cmd", required=True)
+
+    comm = argparse.ArgumentParser(add_help=False)
+    comm.add_argument("product", type=str, help="Product to fetch data for.")
     argp.add_argument("-k", "--key", type=str, help="API key.")
     argp.add_argument("-v", "--verbose", action="store_true", help="Enable log.")
     argp.add_argument("--params", type=json.loads, help="Additional parameters.")
     argp.add_argument("--debug", action="store_true", help="Enable debug mode.")
     argp.add_argument("--sleep", type=float, default=1.0, help="Delay between requests")
 
-    subp = argp.add_subparsers(dest="cmd", required=True)
-
-    meta = subp.add_parser("meta", help="Fetch metadata for product.")
+    meta = subp.add_parser("meta", help="Fetch metadata for product.", parents=[comm])
     meta.set_defaults(func=dew.get_meta)
 
-    down = subp.add_parser("download", help="Download files for product.")
+    down = subp.add_parser("download", help="Download files for product.", parents=[comm])
     down.add_argument("dirpath", type=str, help="Directory to save files to.")
     down.add_argument("-n", "--no-partition", action="store_false", help="Do not partition files.")
     down.add_argument("-s", "--sep", type=str, default="\t", help="Output delimiter.")
     down.add_argument("-c", "--clobber", action="store_true", help="Overwrite existing files.")
     down.set_defaults(func=dew.download_files)
 
-    roll = subp.add_parser("list", help="List files for product.")
+    roll = subp.add_parser("list", help="List files for product.", parents=[comm])
     roll.add_argument("-s", "--sep", type=str, default="\t", help="Output delimiter.")
     roll.set_defaults(func=dew.list_files)
 
