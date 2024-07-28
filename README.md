@@ -1,12 +1,13 @@
-Interact with Dewey Data API
-============================
+Dew Drop: A command line tool for interacting with Dewey Data API
+=================================================================
 
 A simple Python 3 client for the Dewey Data API.
 
-    > python dewey.py --help
+    > python -m dewdrop --help
 
-    usage: dewey.py [-h] [-k KEY] [-v] [--params PARAMS] [--debug]
-                    product {meta,download,list} ...
+    usage: __main__.py [-h] [-k KEY] [-v] [--params PARAMS] [--debug]
+                       [--sleep SLEEP]
+                       product {meta,download,list} ...
     
     Fetch data from Dewey Data.
     
@@ -23,6 +24,8 @@ A simple Python 3 client for the Dewey Data API.
       -v, --verbose         Enable log.
       --params PARAMS       Additional parameters.
       --debug               Enable debug mode.
+      --sleep SLEEP         Delay between requests
+
 
 ## Commands
 
@@ -31,18 +34,18 @@ A simple Python 3 client for the Dewey Data API.
 Get metadata for a product. For example, if the product identifier is
 something like `978cz-306w`, then the command would be:
 
-    python dewey.py 978cz-306w meta
+    python -m dewdrop 978cz-306w meta
 
 By default, the API key is read from the `DEWEY_API_KEY` environment variable.
 To set it manually, use the `key` option:
 
-    python dewey.py 978cz-306w -k YOUR_API_KEY meta
+    python -m dewdrop 978cz-306w -k YOUR_API_KEY meta
 
 ### `list`
 
 List all file info for a product.
 
-    python dewey.py 978cz-306w list
+    python -m dewdrop 978cz-306w list
 
 The file information will be written to standard output.
 
@@ -50,7 +53,7 @@ The file information will be written to standard output.
 
 Download all files for a product.
 
-    python dewey.py 978cz-306w download destination-folder-path
+    python -m dewdrop 978cz-306w download destination-folder-path
 
 Files will be placed in `destination-folder-path`, which will be created if
 it does not exist. Additionally, the file information will be written to
@@ -68,7 +71,7 @@ JSON object, which can be difficult to enter as a string on the command line.
 One option is to put the parameters in a JSON file and pass the file contents
 to the argument like this:
 
-    python dewey.py --params "$(<params.json)" 978cz-306w download destination-folder-path
+    python -m dewdrop --params "$(<params.json)" 978cz-306w download destination-folder-path
 
 Where a `params.json` file to download data for 2022 might look like this:
 
