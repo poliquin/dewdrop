@@ -11,13 +11,12 @@ import json
 import logging
 import sys
 
-from pprint import pprint
 from typing import Generator
 
 from .dewdrop import DeweyData
 
 
-def info_writer(finfo: Generator, delimiter="\t") -> None:
+def info_writer(finfo: Generator, delimiter: str="\t") -> None:
     """Write file info to stdout."""
     row = next(finfo)
     wtr = csv.DictWriter(sys.stdout, delimiter=delimiter, fieldnames=row.keys())
@@ -69,7 +68,9 @@ def main():
     if opts.debug: sys.exit(0)
 
     if opts.cmd == "meta":
-        pprint(opts.func(opts.product, **params))
+        print(
+            json.dumps(opts.func(opts.product, **params), indent=4)
+        )
 
     elif opts.cmd == "download":
         finfo = opts.func(
