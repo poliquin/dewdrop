@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Command line interface to interact with Dewey Data API.
+Command line interface to interact with the Dewey Data API.
 """
 
 import argparse

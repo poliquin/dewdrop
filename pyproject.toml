@@ -7,7 +7,7 @@ dewdrop = "dewdrop.__main__:main"
 
 [project]
 name = "dewdrop"
-version = "0.1.0"
+version = "0.1.2"
 authors = [{name="Chris Poliquin", email="chrispoliquin@gmail.com"}]
 description = "Interact with Dewey Data API from the command line."
 readme = "README.md"
@@ -18,7 +18,14 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Topic :: Utilities"
 ]
+keywords = ["Dewey", "Dewey Data", "API", "data", "academic", "research"]
+
+[project.urls]
+homepage = "https://github.com/poliquin/dewdrop"
+repository = "https://github.com/poliquin/dewdrop"
+issues = "https://github.com/poliquin/dewdrop/issues"
 
 [tool.setuptools]
-py-modules = ["dewdrop"]
+packages = ["dewdrop"]

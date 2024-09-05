@@ -1,5 +1,5 @@
-Dew Drop: A command line tool for interacting with Dewey Data API
-=================================================================
+Dew Drop: A command line tool for the Dewey Data API
+====================================================
 
 A simple Python 3 client for the Dewey Data API that can be used to fetch
 product information and download files.
@@ -22,6 +22,16 @@ product information and download files.
       --params PARAMS       Additional parameters.
       --debug               Enable debug mode.
       --sleep SLEEP         Delay between requests
+
+_NOTE: I have no affiliation with Dewey Data and this is not an official
+Dewey Data client._
+
+
+## Installation
+
+The package can be installed from PyPI:
+
+    pip install dewdrop
 
 
 ## Commands
