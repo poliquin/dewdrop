@@ -123,11 +123,13 @@ class DeweyData(ExtendedSession):
             logging.debug(
                 f"""
                 ===== {product} =====
-                 Total Files: {response["total_files"]}
-                 Total Pages: {response["total_pages"]}
-                  Total Size: {response["total_size"]}
-                  Expires At: {response["expires_at"]}
-                  Page Files: {response["number_of_files_for_page"]}
+                Page: {response["page"]}
+                Number of Files for Page: {response["number_of_files_for_page"]}
+                Average File Size for Page: {response["avg_file_size_for_page"]}
+                Total Files: {response["total_files"]}
+                Total Pages: {response["total_pages"]}
+                Total Size: {response["total_size"]}
+                Expires At: {response["expires_at"]}
                 """
             )
 
