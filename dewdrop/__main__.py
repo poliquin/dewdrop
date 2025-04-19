@@ -44,6 +44,10 @@ def main():
     meta.add_argument("-m", "--multi-table", action="store_true", help="Product is multi-table (implied by --table-name)")
     meta.set_defaults(func=dew.get_meta)
 
+    # this is an alias for meta that only lists tables of multi-table products; one per line
+    tabs = subp.add_parser("tables", help="List tables for multi-table product.", parents=[comm])
+    tabs.set_defaults(func=dew.get_meta)
+
     down = subp.add_parser("download", help="Download files for product.", parents=[comm])
     down.add_argument("dirpath", type=str, help="Directory to save files to.")
     down.add_argument("-t", "--table-name", help="For multi-table products, table to download files for")
@@ -80,6 +84,11 @@ def main():
                 indent=4
             )
         )
+
+    elif opts.cmd == "tables":
+        info = opts.func(opts.product, multi=True)
+        for i in info["items"]:
+            sys.stdout.write(i["table_name"] + "\n")
 
     elif opts.cmd == "download":
         finfo = opts.func(

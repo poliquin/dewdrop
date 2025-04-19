@@ -5,13 +5,14 @@ A simple Python 3 client for the Dewey Data API that can be used to fetch
 product information and download files.
 
     usage: dewdrop [-h] [-k KEY] [-v] [--params PARAMS] [--debug] [--sleep SLEEP]
-                   {meta,download,list} ...
+                   {meta,tables,download,list} ...
 
     Fetch data from Dewey Data.
 
     positional arguments:
-      {meta,download,list}
+      {meta,tables,download,list}
         meta                Fetch metadata for product.
+        tables              List tables for multi-table product.
         download            Download files for product.
         list                List files for product.
 
@@ -57,6 +58,13 @@ To list metadata for a particular table, use the `--table-name` (`-t`) option:
     dewdrop meta 438cd-211x -t "Table Name"
 
 See `dewdrop meta --help` for full options.
+
+### `tables`
+
+List all tables for a multi-table product with one table name per line and no
+other metadata. This is useful for using table names in pipelines:
+
+    dewdrop tables 438cd-211x | xargs -I {} echo "Processing {}"
 
 ### `list`
 
