@@ -89,6 +89,10 @@ By default, the downloaded files will be organized by the `partition_key`
 value that the API returns which each file. To ignore this, specify the
 option `--no-partition`. See `dewdrop download --help` for full options.
 
+To download files for a particular table, use the `--table-name` (`-t`) option:
+
+    dewdrop download 438cd-211x destination-folder-path -t "Table Name"
+
 #### Request parameters
 
 Additional parameters can be passed to the API using the `--params` option.

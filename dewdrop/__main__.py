@@ -46,6 +46,7 @@ def main():
 
     down = subp.add_parser("download", help="Download files for product.", parents=[comm])
     down.add_argument("dirpath", type=str, help="Directory to save files to.")
+    down.add_argument("-t", "--table-name", help="For multi-table products, table to download files for")
     down.add_argument("-n", "--no-partition", action="store_false", help="Do not partition files.")
     down.add_argument("-s", "--sep", type=str, default="\t", help="Output delimiter.")
     down.add_argument("-c", "--clobber", action="store_true", help="Overwrite existing files.")
@@ -82,7 +83,7 @@ def main():
 
     elif opts.cmd == "download":
         finfo = opts.func(
-            opts.dirpath, opts.product, opts.no_partition, opts.clobber, **params
+            opts.dirpath, opts.product, opts.table_name, opts.no_partition, opts.clobber, **params
         )
         info_writer(finfo, delimiter=opts.sep)
 

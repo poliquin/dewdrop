@@ -149,14 +149,20 @@ class DeweyData(ExtendedSession):
             i += 1
 
     def download_files(
-            self, dirpath: str, product: str, partition: bool=True, clobber: bool=False, **kwargs
+            self,
+            dirpath: str,
+            product: str,
+            table_name: str|None = None,
+            partition: bool = True,
+            clobber: bool = False,
+            **kwargs
         ) -> Generator[dict, None, None]:
-        """Download files for product."""
+        """Download files for product or table of a multi-table product."""
 
         dp = Path(dirpath)
         dp.mkdir(parents=True, exist_ok=True)
 
-        for file in self.get_files(product, **kwargs):
+        for file in self.get_files(product, table_name, **kwargs):
 
             if partition and file['partition_key'] is not None:
                 fpath = dp / file["partition_key"] / file["file_name"]
