@@ -90,11 +90,17 @@ class DeweyData(ExtendedSession):
         """Make an API request."""
         return self.request("GET", url, params=params).json()
 
-    def get_meta(self, product: str, **kwargs) -> dict:
+    def get_meta(self, product: str, multi: bool = False, **kwargs) -> dict:
         """Download metadata for product."""
 
         logging.debug("Fetching metadata for %s", product)
-        return self._get(f"{self._base_url}/{product}/files/metadata", kwargs)
+
+        if not multi or "table_name" in kwargs:
+            url = f"{self._base_url}/{product}/files/metadata"
+        else:
+            url = f"{self._base_url}/{product}/files/multi-table-product-metadata"
+
+        return self._get(url, kwargs)
 
     def get_files(self, product: str, **kwargs) -> Generator[dict, None, None]:
         """Download metadata for product."""

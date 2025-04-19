@@ -40,6 +40,8 @@ def main():
     argp.add_argument("--sleep", type=float, default=1.0, help="Delay between requests")
 
     meta = subp.add_parser("meta", help="Fetch metadata for product.", parents=[comm])
+    meta.add_argument("-t", "--table-name", help="For multi table products, table to fetch info for")
+    meta.add_argument("-m", "--multi-table", action="store_true", help="Product is multi table (implied by --table-name)")
     meta.set_defaults(func=dew.get_meta)
 
     down = subp.add_parser("download", help="Download files for product.", parents=[comm])
@@ -68,8 +70,13 @@ def main():
     if opts.debug: sys.exit(0)
 
     if opts.cmd == "meta":
+        if opts.table_name:
+            params["table_name"] = opts.table_name
         print(
-            json.dumps(opts.func(opts.product, **params), indent=4)
+            json.dumps(
+                opts.func(opts.product, multi=opts.multi_table, **params),
+                indent=4
+            )
         )
 
     elif opts.cmd == "download":

@@ -48,6 +48,14 @@ To set it manually, use the `key` option:
 
     dewdrop -k YOUR_API_KEY meta 978cz-306w
 
+To list tables in multi-table products, use the `--multi-table` (`-m`) option:
+
+    dewdrop meta 438cd-211x -m
+
+To list metadata for a particular table, use the `--table-name` (`-t`) option:
+
+    dewdrop meta 438cd-211x -t "Table Name"
+
 See `dewdrop meta --help` for full options.
 
 ### `list`
