@@ -69,6 +69,10 @@ redirect this to a file if you want to save it:
 
     dewdrop list 978cz-306w > file_info.tsv
 
+To list files for a particular table, use the `--table-name` (`-t`) option:
+
+    dewdrop list 438cd-211x -t "Table Name"
+
 See `dewdrop list --help` for full options.
 
 ### `download`

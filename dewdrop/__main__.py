@@ -40,8 +40,8 @@ def main():
     argp.add_argument("--sleep", type=float, default=1.0, help="Delay between requests")
 
     meta = subp.add_parser("meta", help="Fetch metadata for product.", parents=[comm])
-    meta.add_argument("-t", "--table-name", help="For multi table products, table to fetch info for")
-    meta.add_argument("-m", "--multi-table", action="store_true", help="Product is multi table (implied by --table-name)")
+    meta.add_argument("-t", "--table-name", help="For multi-table products, table to fetch info for")
+    meta.add_argument("-m", "--multi-table", action="store_true", help="Product is multi-table (implied by --table-name)")
     meta.set_defaults(func=dew.get_meta)
 
     down = subp.add_parser("download", help="Download files for product.", parents=[comm])
@@ -53,6 +53,7 @@ def main():
 
     roll = subp.add_parser("list", help="List files for product.", parents=[comm])
     roll.add_argument("-s", "--sep", type=str, default="\t", help="Output delimiter.")
+    roll.add_argument("-t", "--table-name", help="For multi-table products, table to list files for")
     roll.set_defaults(func=dew.list_files)
 
 
@@ -86,7 +87,7 @@ def main():
         info_writer(finfo, delimiter=opts.sep)
 
     elif opts.cmd == "list":
-        finfo = opts.func(opts.product, **params)
+        finfo = opts.func(opts.product, opts.table_name, **params)
         info_writer(finfo, delimiter=opts.sep)
 
 
