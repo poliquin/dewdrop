@@ -7,7 +7,7 @@ dewdrop = "dewdrop.__main__:main"
 
 [project]
 name = "dewdrop"
-version = "0.1.2"
+version = "0.2.0"
 authors = [{name="Chris Poliquin", email="chrispoliquin@gmail.com"}]
 description = "Interact with Dewey Data API from the command line."
 readme = "README.md"
