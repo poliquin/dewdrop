@@ -69,7 +69,7 @@ class DeweyData(ExtendedSession):
     def __init__(self, key: str|None = None, sleep: float = 1.0):
 
         super().__init__(delay = float(sleep))
-        self._base_url = "https://app.deweydata.io/external-api/v3/products"
+        self._base_url = "https://app.deweydata.io/api/v1/external/data"
         self.key = os.getenv("DEWEY_API_KEY") if key is None else key
 
     @property
@@ -90,24 +90,18 @@ class DeweyData(ExtendedSession):
         """Make an API request."""
         return self.request("GET", url, params=params).json()
 
-    def get_meta(self, product: str, multi: bool = False, **kwargs) -> dict:
+    def get_meta(self, product: str, **kwargs) -> dict:
         """Download metadata for product."""
 
         logging.debug("Fetching metadata for %s", product)
-        table_name = kwargs.get("table_name", None)
-
-        if table_name or not multi:
-            url = f"{self._base_url}/{product}/files/metadata"
-        else:
-            url = f"{self._base_url}/{product}/files/multi-table-product-metadata"
-
+        url = f"{self._base_url}/{product}/metadata"
         return self._get(url, kwargs)
 
-    def get_files(self, product: str, table_name: str|None = None, **kwargs) -> Generator[dict, None, None]:
-        """Get list of files for product or table of multi-table product."""
+    def get_files(self, product: str, **kwargs) -> Generator[dict, None, None]:
+        """Get list of files for product."""
 
         # use metadata to determine default partitioning
-        meta = self.get_meta(product, table_name=table_name)
+        meta = self.get_meta(product)
 
         if meta["partition_type"] == "DATE":
             params: dict = {
@@ -115,9 +109,6 @@ class DeweyData(ExtendedSession):
             }
         else:
             params = {}
-
-        if table_name:
-            params["table_name"] = table_name
 
         params |= kwargs
 
@@ -152,17 +143,16 @@ class DeweyData(ExtendedSession):
             self,
             dirpath: str,
             product: str,
-            table_name: str|None = None,
             partition: bool = True,
             clobber: bool = False,
             **kwargs
         ) -> Generator[dict, None, None]:
-        """Download files for product or table of a multi-table product."""
+        """Download files for product."""
 
         dp = Path(dirpath)
         dp.mkdir(parents=True, exist_ok=True)
 
-        for file in self.get_files(product, table_name, **kwargs):
+        for file in self.get_files(product, **kwargs):
 
             if partition and file['partition_key'] is not None:
                 fpath = dp / file["partition_key"] / file["file_name"]
@@ -187,10 +177,7 @@ class DeweyData(ExtendedSession):
 
             yield file
 
-    def list_files(self, product: str, table_name: str|None = None, **kwargs) -> Generator[dict, None, None]:
+    def list_files(self, product: str, **kwargs) -> Generator[dict, None, None]:
         """List files for product."""
-        if not table_name:
-            logging.debug("Listing files for %s", product)
-        else:
-            logging.debug("Listing files for table %s in %s", table_name, product)
-        yield from self.get_files(product, table_name, **kwargs)
+        logging.debug("Listing files for %s", product)
+        yield from self.get_files(product, **kwargs)

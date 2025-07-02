@@ -5,14 +5,13 @@ A simple Python 3 client for the Dewey Data API that can be used to fetch
 product information and download files.
 
     usage: dewdrop [-h] [-k KEY] [-v] [--params PARAMS] [--debug] [--sleep SLEEP]
-                   {meta,tables,download,list} ...
+                   {meta,download,list} ...
 
     Fetch data from Dewey Data.
 
     positional arguments:
-      {meta,tables,download,list}
+      {meta,download,list}
         meta                Fetch metadata for product.
-        tables              List tables for multi-table product.
         download            Download files for product.
         list                List files for product.
 
@@ -49,23 +48,6 @@ To set it manually, use the `key` option:
 
     dewdrop -k YOUR_API_KEY meta 978cz-306w
 
-To list tables in multi-table products, use the `--multi-table` (`-m`) option:
-
-    dewdrop meta 438cd-211x -m
-
-To list metadata for a particular table, use the `--table-name` (`-t`) option:
-
-    dewdrop meta 438cd-211x -t "Table Name"
-
-See `dewdrop meta --help` for full options.
-
-### `tables`
-
-List all tables for a multi-table product with one table name per line and no
-other metadata. This is useful for using table names in pipelines:
-
-    dewdrop tables 438cd-211x | xargs -I {} echo "Processing {}"
-
 ### `list`
 
 List all file info for a product.
@@ -76,10 +58,6 @@ The file information will be written to standard output. You can, of course,
 redirect this to a file if you want to save it:
 
     dewdrop list 978cz-306w > file_info.tsv
-
-To list files for a particular table, use the `--table-name` (`-t`) option:
-
-    dewdrop list 438cd-211x -t "Table Name"
 
 See `dewdrop list --help` for full options.
 
@@ -96,10 +74,6 @@ standard output as with the `list` command.
 By default, the downloaded files will be organized by the `partition_key`
 value that the API returns which each file. To ignore this, specify the
 option `--no-partition`. See `dewdrop download --help` for full options.
-
-To download files for a particular table, use the `--table-name` (`-t`) option:
-
-    dewdrop download 438cd-211x destination-folder-path -t "Table Name"
 
 #### Request parameters
 
