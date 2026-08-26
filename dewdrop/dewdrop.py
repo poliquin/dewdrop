@@ -237,15 +237,10 @@ class DeweyData(ExtendedSession):
 
         for file in self.get_files(product, **kwargs):
 
-            if partition and file['partition_key'] is not None:
+            if partition and file["partition_key"] is not None:
                 fpath = dp / file["partition_key"] / file["file_name"]
             else:
-                # file names can repeat across pages of the same product,
-                # include page number in the path for multi-page products
-                if file["total_pages"] == 1:
-                    fpath = dp / file["file_name"]
-                else:
-                    fpath = dp / f"page-{file['page']}" / file["file_name"]
+                fpath = dp / file["file_name"]
 
             if not clobber and fpath.exists():
                 if fpath.stat().st_size == file["file_size_bytes"]:

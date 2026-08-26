@@ -25,7 +25,8 @@ product information and download files.
       --sleep SLEEP         Delay between requests
 
 _NOTE: I have no affiliation with Dewey Data and this is not an official
-Dewey Data client._
+Dewey Data client. If you're looking for an official Python client,
+try [`deweypy`](https://github.com/Dewey-Data/deweypy)._
 
 
 ## Installation
@@ -92,7 +93,7 @@ it does not exist. Additionally, the file information will be written to
 standard output as with the `list` command.
 
 By default, the downloaded files will be organized by the `partition_key`
-value that the API returns which each file. To ignore this, specify the
+value that the API returns with each file. To ignore this, specify the
 option `--no-partition`. See `dewdrop download --help` for full options.
 
 Files that already exist in the destination with the size reported by the
