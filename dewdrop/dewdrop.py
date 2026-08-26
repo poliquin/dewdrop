@@ -1,4 +1,3 @@
-
 """
 Interact with Dewey Data API.
 """
@@ -8,8 +7,40 @@ import os
 import requests
 import time
 
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Generator
+
+try:
+    __version__ = version("dewdrop")
+except PackageNotFoundError:
+    __version__ = "dev"
+
+BASE_URL = "https://api.deweydata.io/api/v1/external/data"
+
+# Only these statuses can plausibly succeed on retry.
+RETRY_STATUS = frozenset({408, 429, 500, 502, 503, 504})
+
+
+class DeweyRequestError(requests.RequestException):
+    """A request that failed and should not be retried further."""
+
+
+class IncompleteDownload(Exception):
+    """A downloaded file does not have the size reported by the API."""
+
+
+def _error_detail(resp: requests.Response) -> str:
+    """Extract the error message the API puts in the response body."""
+    try:
+        body = resp.json()
+    except ValueError:
+        return resp.text[:200].strip()
+    if isinstance(body, dict):
+        for k in ("detail", "error", "error_message", "message"):
+            if k in body:
+                return str(body[k])
+    return str(body)[:200]
 
 
 class ExtendedSession(requests.Session):
@@ -20,8 +51,12 @@ class ExtendedSession(requests.Session):
         self.headers.update(headers or {})
 
         self.max_tries: int = int(max_tries)
-        self.retry_delay: float = 180
+        self.retry_delay: float = 30
+        self.max_retry_delay: float = 600
         self.request_delay: float = float(delay)
+        # (connect, read) seconds; requests has no timeout by default and a
+        # stalled connection would otherwise hang forever
+        self.timeout: tuple[float, float] = (30, 120)
         self._last_request_time: float = 0
 
     def _delay(self) -> None:
@@ -31,36 +66,42 @@ class ExtendedSession(requests.Session):
             time.sleep(self.request_delay - time_since_last_request)
         self._last_request_time = time.time()
 
+    def _retry_wait(self, attempt: int, resp: requests.Response|None = None) -> float:
+        """Seconds to wait before the next attempt, honoring Retry-After if sent."""
+        if resp is not None:
+            retry_after = resp.headers.get("Retry-After")
+            if retry_after and retry_after.isdigit():
+                return float(retry_after)
+        return min(self.retry_delay * (2 ** (attempt - 1)), self.max_retry_delay)
+
     def request(self, method: str|bytes, url: str|bytes, **kwargs) -> requests.Response:  # pyright: ignore
         """Make a request with retries and delays as necessary."""
 
         if self.request_delay > 0:
             self._delay()
+        kwargs.setdefault("timeout", self.timeout)
 
-        tries = 0
-        while tries < self.max_tries:
-            tries += 1
-
+        err = ""
+        for attempt in range(1, self.max_tries + 1):
+            resp = None
             try:
                 resp = super().request(method, url, **kwargs)
-
-                # don't bother retrying if not found or access denied
-                if resp.status_code in (403, 404):
-                    logging.critical("Request to %s failed with status %d", url, resp.status_code)
-                    break
-
-                resp.raise_for_status()
-                return resp
-
             except requests.RequestException as e:
-                logging.error("Request failed: %s", e)
-                if tries < self.max_tries:
-                    time.sleep(self.retry_delay * (2 ** (tries - 1)))
-                    logging.debug("Retrying request to %s", url)
+                err = str(e)
+            else:
+                if resp.ok:
+                    return resp
+                err = f"HTTP {resp.status_code} {_error_detail(resp)}"
+                if resp.status_code not in RETRY_STATUS:
+                    raise DeweyRequestError(f"Request to {url} failed: {err}", response=resp)
 
-        raise requests.RequestException(
-            f"Request to {url} failed after {tries} {'try' if tries == 1 else 'tries'}"
-        )
+            logging.error("Request to %s failed (try %d of %d): %s", url, attempt, self.max_tries, err)
+            if attempt < self.max_tries:
+                wait = self._retry_wait(attempt, resp)
+                logging.debug("Retrying request to %s in %.0f seconds", url, wait)
+                time.sleep(wait)
+
+        raise DeweyRequestError(f"Request to {url} failed after {self.max_tries} tries: {err}")
 
 
 class DeweyData(ExtendedSession):
@@ -68,8 +109,9 @@ class DeweyData(ExtendedSession):
 
     def __init__(self, key: str|None = None, sleep: float = 1.0):
 
-        super().__init__(delay = float(sleep))
-        self._base_url = "https://app.deweydata.io/api/v1/external/data"
+        headers = {"User-Agent": f"dewdrop/{__version__}", "accept": "application/json"}
+        super().__init__(delay = float(sleep), headers=headers)
+        self._base_url = BASE_URL
         self.key = os.getenv("DEWEY_API_KEY") if key is None else key
 
     @property
@@ -83,8 +125,22 @@ class DeweyData(ExtendedSession):
 
     def _set_api_header(self) -> None:
         """Set the API key header."""
-        headers = {"X-API-KEY": self._key, "accept": "application/json"}
-        self.headers.update(headers)
+        if self._key:
+            self.headers["X-API-KEY"] = self._key
+        else:
+            self.headers.pop("X-API-KEY", None)
+
+    def _url(self, product: str, endpoint: str) -> str:
+        """Build an endpoint URL for a product.
+
+        The product can be an identifier (e.g. prj_xxx__fldr_yyy) or the full
+        API URL shown in the Dewey web app, which ends in that identifier.
+        """
+        if product.startswith(("http://", "https://")):
+            base = product.rstrip("/")
+        else:
+            base = f"{self._base_url}/{product}"
+        return f"{base}/{endpoint}"
 
     def _get(self, url: str, params: dict|None = None) -> dict:
         """Make an API request."""
@@ -94,8 +150,13 @@ class DeweyData(ExtendedSession):
         """Download metadata for product."""
 
         logging.debug("Fetching metadata for %s", product)
-        url = f"{self._base_url}/{product}/metadata"
-        return self._get(url, kwargs)
+        return self._get(self._url(product, "metadata"), kwargs)
+
+    def describe(self, product: str, **kwargs) -> dict:
+        """Download description (name, partner, version, DOI) for product."""
+
+        logging.debug("Fetching description for %s", product)
+        return self._get(self._url(product, "describe"), kwargs)
 
     def get_files(self, product: str, **kwargs) -> Generator[dict, None, None]:
         """Get list of files for product."""
@@ -115,7 +176,7 @@ class DeweyData(ExtendedSession):
         i = 1
         while True:
             params["page"] = i
-            response = self._get(f"{self._base_url}/{product}/files", params)
+            response = self._get(self._url(product, "files"), params)
             logging.debug(
                 "Fetched page %d of %d for %s file list", i, response["total_pages"], product
             )
@@ -138,6 +199,28 @@ class DeweyData(ExtendedSession):
             if i >= response["total_pages"]:
                 break
             i += 1
+
+    def _download(self, link: str, fpath: Path, expected_size: int|None) -> None:
+        """Stream a file to disk, verify its size, and move it into place."""
+
+        # write to a temporary name so an interrupted download is never
+        # mistaken for a complete file when the command is re-run
+        tmp = fpath.with_name(fpath.name + ".part")
+        fpath.parent.mkdir(parents=True, exist_ok=True)
+
+        # download links carry their own secret, so the API key is not needed
+        with self.request("GET", link, stream=True, headers={"X-API-KEY": None}) as resp:
+            with open(tmp, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=1 << 20):
+                    f.write(chunk)
+
+        size = tmp.stat().st_size
+        if expected_size is not None and size != expected_size:
+            tmp.unlink()
+            raise IncompleteDownload(
+                f"Downloaded {size} bytes for {fpath.name}, expected {expected_size}"
+            )
+        tmp.replace(fpath)
 
     def download_files(
             self,
@@ -165,15 +248,28 @@ class DeweyData(ExtendedSession):
                     fpath = dp / f"page-{file['page']}" / file["file_name"]
 
             if not clobber and fpath.exists():
-                logging.debug("Skipping existing file %s", fpath)
-                continue
+                if fpath.stat().st_size == file["file_size_bytes"]:
+                    logging.debug("Skipping existing file %s", fpath)
+                    continue
+                logging.warning("Existing file %s has wrong size, downloading again", fpath)
 
-            logging.debug("Downloading %s", file["file_name"])
-            req = self.request("GET", file["link"])
-
-            fpath.parent.mkdir(parents=True, exist_ok=True)
-            with open(fpath, "wb") as f:
-                f.write(req.content)
+            logging.debug("Downloading %s (%d bytes)", file["file_name"], file["file_size_bytes"])
+            for attempt in range(1, self.max_tries + 1):
+                try:
+                    self._download(file["link"], fpath, file["file_size_bytes"])
+                    break
+                except DeweyRequestError:
+                    # request() has already retried what it could
+                    raise
+                except (requests.RequestException, IncompleteDownload) as e:
+                    # failures partway through the stream are not seen by request()
+                    logging.error(
+                        "Download of %s failed (try %d of %d): %s",
+                        file["file_name"], attempt, self.max_tries, e
+                    )
+                    if attempt == self.max_tries:
+                        raise
+                    time.sleep(self._retry_wait(attempt))
 
             yield file
 
