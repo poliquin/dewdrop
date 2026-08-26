@@ -98,7 +98,9 @@ option `--no-partition`. See `dewdrop download --help` for full options.
 
 Files that already exist in the destination with the size reported by the
 API are skipped, so an interrupted download can be resumed by re-running the
-same command. Use `--clobber` to download everything again.
+same command. Use `--clobber` to download everything again. If two different
+files in a listing would be written to the same path, the download stops with
+an error rather than overwriting either of them.
 
 #### Request parameters
 

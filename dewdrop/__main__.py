@@ -15,7 +15,7 @@ from typing import Generator
 
 import requests
 
-from .dewdrop import DeweyData
+from .dewdrop import DeweyData, DewdropError
 
 
 def info_writer(finfo: Generator, delimiter: str="\t") -> None:
@@ -96,7 +96,7 @@ def main():
             finfo = opts.func(opts.product, **params)
             info_writer(finfo, delimiter=opts.sep)
 
-    except requests.RequestException as e:
+    except (requests.RequestException, DewdropError) as e:
         logging.critical("%s", e)
         sys.exit(1)
 

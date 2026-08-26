@@ -26,8 +26,16 @@ class DeweyRequestError(requests.RequestException):
     """A request that failed and should not be retried further."""
 
 
-class IncompleteDownload(Exception):
+class DewdropError(Exception):
+    """Base class for errors raised by dewdrop itself."""
+
+
+class IncompleteDownload(DewdropError):
     """A downloaded file does not have the size reported by the API."""
+
+
+class DuplicateFileName(DewdropError):
+    """Two different files in a listing would be written to the same path."""
 
 
 def _error_detail(resp: requests.Response) -> str:
@@ -235,12 +243,26 @@ class DeweyData(ExtendedSession):
         dp = Path(dirpath)
         dp.mkdir(parents=True, exist_ok=True)
 
+        # paths seen in this run, so that a repeated file name is caught
+        # rather than silently skipped or overwritten
+        seen: dict[Path, str] = {}
+
         for file in self.get_files(product, **kwargs):
 
             if partition and file["partition_key"] is not None:
                 fpath = dp / file["partition_key"] / file["file_name"]
             else:
                 fpath = dp / file["file_name"]
+
+            if fpath in seen:
+                if seen[fpath] == file["external_id"]:
+                    logging.debug("Skipping repeated listing of %s", fpath)
+                    continue
+                raise DuplicateFileName(
+                    f"{file['file_name']} appears more than once in the listing "
+                    f"({seen[fpath]} and {file['external_id']}); refusing to overwrite {fpath}"
+                )
+            seen[fpath] = file["external_id"]
 
             if not clobber and fpath.exists():
                 if fpath.stat().st_size == file["file_size_bytes"]:
