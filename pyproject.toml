@@ -7,13 +7,14 @@ dewdrop = "dewdrop.__main__:main"
 
 [project]
 name = "dewdrop"
-version = "0.4.0"
+version = "0.4.1"
 authors = [{name="Chris Poliquin", email="chrispoliquin@gmail.com"}]
 description = "Interact with Dewey Data API from the command line."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "requests>=2.32.0,<3.0.0"
+    "requests>=2.32.0,<3.0.0",
+    "urllib3>=2.8.0,<3.0.0"
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
